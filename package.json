@@ -1,8 +1,8 @@
 {
-  "name": "dgmm-compliance-portal",
+  "name": "pso-diary",
   "private": true,
   "version": "1.0.0",
-  "homepage": "https://isyedhammad.github.io/dgmm-compliance-portal",
+  "homepage": "https://isyedhammad.github.io/pso-diary",
   "type": "module",
   "scripts": {
     "dev": "vite",

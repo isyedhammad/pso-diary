@@ -22,7 +22,7 @@ Every meeting retains an immutable historical dossier and verified supporting do
 ## 🌐 Live Portal Access
 
 **Official GitHub Pages Production Link:**  
-👉 **[https://isyedhammad.github.io/dgmm-compliance-portal/](https://isyedhammad.github.io/dgmm-compliance-portal/)**
+👉 **[https://isyedhammad.github.io/pso-diary/](https://isyedhammad.github.io/pso-diary/)**
 
 ---
 
@@ -148,8 +148,8 @@ The complete SQL DDL schema with RLS security policies and initial seed data is 
 
 ```bash
 # Clone the repository
-git clone https://github.com/isyedhammad/dgmm-compliance-portal.git
-cd dgmm-compliance-portal
+git clone https://github.com/isyedhammad/pso-diary.git
+cd pso-diary
 
 # Install dependencies
 npm install
