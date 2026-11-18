@@ -19,7 +19,8 @@ import {
   ChevronRight,
   CalendarClock,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Printer
 } from 'lucide-react';
 
 export const MeetingsView: React.FC = () => {
@@ -37,7 +38,8 @@ export const MeetingsView: React.FC = () => {
     setSelectedDirectionId,
     setActiveTab,
     activityLogs,
-    currentUser
+    currentUser,
+    setIsPrintDocketOpen
   } = useApp();
 
   const [search, setSearch] = useState('');
@@ -317,6 +319,15 @@ export const MeetingsView: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setIsPrintDocketOpen(true)}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#162744] dark:hover:bg-[#1e345c] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-[#223d68] text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+              title="Print Daily Engagements or Scheduled Meetings Docket"
+            >
+              <Printer className="w-4 h-4 text-emerald-600 dark:text-amber-400" />
+              <span>Print Engagements</span>
+            </button>
+
             <button
               onClick={() => openRescheduleModal(currentMeeting)}
               className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#162744] dark:hover:bg-[#1e345c] text-slate-700 dark:text-amber-300 border border-slate-300 dark:border-[#223d68] text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
@@ -803,13 +814,24 @@ export const MeetingsView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsNewMeetingModalOpen(true)}
-          className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Record New Meeting</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsPrintDocketOpen(true)}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-[#14233c] dark:hover:bg-[#1d3254] border border-slate-300 dark:border-[#22395d] text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+            title="Print or Export Daily Engagements & Scheduled Meetings (PDF)"
+          >
+            <Printer className="w-4 h-4 text-emerald-600 dark:text-amber-400" />
+            <span>Print Engagements (PDF)</span>
+          </button>
+
+          <button
+            onClick={() => setIsNewMeetingModalOpen(true)}
+            className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Record New Meeting</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}

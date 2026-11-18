@@ -10,7 +10,8 @@ import {
   Plus,
   FileText,
   Building,
-  User
+  User,
+  Printer
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
@@ -20,7 +21,8 @@ export const DashboardView: React.FC = () => {
     kpis, 
     setActiveTab, 
     setSelectedMeetingId, 
-    setSelectedDirectionId 
+    setSelectedDirectionId,
+    setIsPrintDocketOpen
   } = useApp();
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -62,6 +64,14 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setIsPrintDocketOpen(true)}
+            className="px-3 py-2 bg-slate-100 dark:bg-[#12223c] hover:bg-slate-200 dark:hover:bg-[#1a3055] border border-slate-300 dark:border-[#233d66] text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+            title="Print or Export Daily Engagements & Scheduled Meetings (PDF)"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-amber-400" />
+            <span>Print Engagements (PDF)</span>
+          </button>
           <button
             onClick={() => setActiveTab('meetings')}
             className="px-3 py-2 bg-slate-100 dark:bg-[#12223c] hover:bg-slate-200 dark:hover:bg-[#1a3055] border border-slate-300 dark:border-[#233d66] text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"

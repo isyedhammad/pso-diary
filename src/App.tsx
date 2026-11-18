@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { MeetingsView } from './components/MeetingsView';
 import { DirectionsView } from './components/DirectionsView';
+import { EngagementsPrintModal } from './components/EngagementsPrintModal';
 
 const MainLayout: React.FC = () => {
   const { activeTab } = useApp();
@@ -24,6 +25,9 @@ const MainLayout: React.FC = () => {
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)} 
         />
+
+        {/* Print / PDF Docket Modal */}
+        <EngagementsPrintModal />
 
         {/* Main Content Area */}
         <main className="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto overflow-y-auto">

@@ -35,6 +35,10 @@ interface AppContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
+  // Print Docket Modal
+  isPrintDocketOpen: boolean;
+  setIsPrintDocketOpen: (open: boolean) => void;
+
   // Data
   meetings: Meeting[];
   directions: Direction[];
@@ -136,6 +140,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedDivisionFilter, setSelectedDivisionFilter] = useState<string | null>(null);
   const [selectedFieldOfficeFilter, setSelectedFieldOfficeFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isPrintDocketOpen, setIsPrintDocketOpen] = useState<boolean>(false);
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(SAMPLE_USERS[0]);
   const [cloudConfig, setCloudConfig] = useState<CloudConfig>(getStoredCloudConfig());
@@ -797,6 +802,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedFieldOfficeFilter,
         searchQuery,
         setSearchQuery,
+        isPrintDocketOpen,
+        setIsPrintDocketOpen,
         meetings,
         directions,
         activityLogs,
