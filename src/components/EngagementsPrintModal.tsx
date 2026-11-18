@@ -389,7 +389,10 @@ export const EngagementsPrintModal: React.FC = () => {
 
               {/* Scope Title */}
               <div className="mt-3 pt-1 border-t border-slate-400 text-center">
-                <span className="inline-block bg-slate-900 text-white font-mono text-[11px] font-bold px-3 py-0.5 uppercase tracking-wider rounded-xs">
+                <span 
+                  className="inline-block text-white font-mono text-[11px] sm:text-xs font-bold px-4 py-1 uppercase tracking-wider rounded"
+                  style={{ backgroundColor: '#0b3d20', color: '#ffffff' }}
+                >
                   {getScopeTitle()}
                 </span>
               </div>
