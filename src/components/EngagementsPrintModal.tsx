@@ -1,17 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { 
   Printer, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  User, 
-  Users, 
+  Download, 
   X, 
-  FileText, 
-  CheckCircle2, 
-  CalendarClock,
-  Filter
+  Loader2
 } from 'lucide-react';
 
 export const EngagementsPrintModal: React.FC = () => {
@@ -32,18 +27,7 @@ export const EngagementsPrintModal: React.FC = () => {
   const [scope, setScope] = useState<'today' | 'tomorrow' | 'custom' | 'all-scheduled' | 'all-total'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [chairFilter, setChairFilter] = useState<'all' | 'dg'>('all');
-
-  // Clean print state on unmount / after print
-  useEffect(() => {
-    const handleAfterPrint = () => {
-      document.body.classList.remove('printing-docket');
-    };
-    window.addEventListener('afterprint', handleAfterPrint);
-    return () => {
-      window.removeEventListener('afterprint', handleAfterPrint);
-      document.body.classList.remove('printing-docket');
-    };
-  }, []);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // Filter meetings according to chosen scope
   const filteredMeetings = useMemo(() => {
@@ -73,28 +57,101 @@ export const EngagementsPrintModal: React.FC = () => {
     });
   }, [meetings, scope, selectedDate, chairFilter, todayStr, tomorrowStr]);
 
-  // Statistics
+  // Statistics: Total Scheduled & Chaired by DG
   const stats = useMemo(() => {
     const total = filteredMeetings.length;
     const dgChaired = filteredMeetings.filter(m => 
       m.chairperson.toLowerCase().includes('director general') || 
       m.chairperson.toLowerCase().includes('dg')
     ).length;
-    const rescheduled = filteredMeetings.filter(m => m.status === 'Rescheduled').length;
-    const totalDirectives = filteredMeetings.reduce((acc, m) => {
-      const count = directions.filter(d => d.meeting_id === m.id && !d.is_archived).length;
-      return acc + count;
-    }, 0);
 
-    return { total, dgChaired, rescheduled, totalDirectives };
-  }, [filteredMeetings, directions]);
+    return { total, dgChaired };
+  }, [filteredMeetings]);
 
+  // DIRECT PDF DOWNLOAD
+  const handleDownloadPdf = async () => {
+    const element = document.getElementById('printable-engagement-docket');
+    if (!element) return;
+
+    try {
+      setIsDownloadingPdf(true);
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const dateStr = scope === 'today' ? todayStr : scope === 'tomorrow' ? tomorrowStr : selectedDate;
+      pdf.save(`DGMM_Engagements_Roster_${dateStr}.pdf`);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      window.print();
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  // CLEAN POPUP PRINTING
   const handlePrint = () => {
-    document.body.classList.add('printing-docket');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-docket');
-    }, 1500);
+    const content = document.getElementById('printable-engagement-docket');
+    if (!content) return;
+
+    const printWindow = window.open('', '_blank', 'width=950,height=1000');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>DGMM Engagements Roster</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #fff; color: #111; margin: 10mm; padding: 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; }
+            th, td { border: 1px solid #333; padding: 6px 8px; font-size: 11px; }
+            th { background: #111827; color: white; text-transform: uppercase; font-size: 10px; }
+            @page { size: A4 portrait; margin: 10mm; }
+          </style>
+        </head>
+        <body>
+          ${content.innerHTML}
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+              setTimeout(function() { window.close(); }, 800);
+            };
+          </script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    } else {
+      window.print();
+    }
   };
 
   if (!isPrintDocketOpen) return null;
@@ -126,35 +183,56 @@ export const EngagementsPrintModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto modal-backdrop-print-hide">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       
       {/* Outer Modal Container */}
       <div className="bg-white dark:bg-[#0c1626] border border-slate-300 dark:border-[#22395d] rounded-2xl max-w-5xl w-full shadow-2xl flex flex-col max-h-[92vh] overflow-hidden my-auto">
         
-        {/* Modal Toolbar (Screen-Only) */}
-        <div className="p-4 bg-slate-100 dark:bg-[#08101d] border-b border-slate-200 dark:border-[#1c2e4b] flex flex-col md:flex-row md:items-center justify-between gap-3 no-print">
+        {/* Modal Toolbar */}
+        <div className="p-4 bg-slate-100 dark:bg-[#08101d] border-b border-slate-200 dark:border-[#1c2e4b] flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <span className="p-1.5 bg-emerald-100 dark:bg-amber-500/20 text-emerald-800 dark:text-amber-400 rounded-lg">
-                <Printer className="w-4 h-4" />
+                <Download className="w-4 h-4" />
               </span>
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 font-serif">
-                Print Executive Engagements &amp; Meetings (PDF)
+                Download Engagements Roster (PDF)
               </h3>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Generate an official Government of Punjab engagement docket suitable for printing or saving as PDF.
+              Generate and download a clean official PDF document or print directly.
             </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* PRIMARY: DIRECT PDF DOWNLOAD */}
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-500 text-white dark:text-slate-950 text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5 disabled:opacity-50"
+              title="Download PDF document directly to your device"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Generating PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </>
+              )}
+            </button>
+
+            {/* SECONDARY: PRINT */}
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-500 text-white dark:text-slate-950 text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5"
-              title="Open browser print dialog (Select 'Save as PDF' to export as PDF)"
+              className="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-[#152338] dark:hover:bg-[#1e3250] text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
+              title="Print directly to physical printer"
             >
               <Printer className="w-4 h-4" />
-              <span>Print / Save as PDF</span>
+              <span>Print</span>
             </button>
 
             <button
@@ -167,8 +245,8 @@ export const EngagementsPrintModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter Controls Bar (Screen-Only) */}
-        <div className="p-3 bg-white dark:bg-[#0e192c] border-b border-slate-200 dark:border-[#1e3250] flex flex-wrap items-center justify-between gap-2.5 text-xs no-print">
+        {/* Filter Controls Bar */}
+        <div className="p-3 bg-white dark:bg-[#0e192c] border-b border-slate-200 dark:border-[#1e3250] flex flex-wrap items-center justify-between gap-2.5 text-xs">
           
           {/* Scope selection buttons */}
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#070e1a] p-1 rounded-lg border border-slate-200 dark:border-[#1b2d49]">
@@ -256,7 +334,7 @@ export const EngagementsPrintModal: React.FC = () => {
         </div>
 
         {/* =========================================================================
-            PRINTABLE DOCKET CONTENT (Rendered on screen & captured in Print / PDF)
+            CLEAN OFFICIAL DOCKET (Captured into PDF & previewed on screen)
            ========================================================================= */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200/60 dark:bg-[#060b14]">
           
@@ -264,7 +342,7 @@ export const EngagementsPrintModal: React.FC = () => {
           <div 
             id="printable-engagement-docket"
             className="bg-white text-slate-900 max-w-4xl mx-auto p-8 sm:p-10 shadow-lg rounded-sm font-sans"
-            style={{ minHeight: '840px', color: '#111827' }}
+            style={{ minHeight: '840px', color: '#111827', backgroundColor: '#ffffff' }}
           >
             
             {/* 1. Official Government Letterhead */}
@@ -309,7 +387,7 @@ export const EngagementsPrintModal: React.FC = () => {
 
               </div>
 
-              {/* Decorative double bar */}
+              {/* Scope Title */}
               <div className="mt-3 pt-1 border-t border-slate-400 text-center">
                 <span className="inline-block bg-slate-900 text-white font-mono text-[11px] font-bold px-3 py-0.5 uppercase tracking-wider rounded-xs">
                   {getScopeTitle()}
@@ -317,27 +395,7 @@ export const EngagementsPrintModal: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. Metadata Information Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2 px-3 bg-slate-100 border border-slate-300 text-[10px] font-mono text-slate-800 mb-4 rounded-xs">
-              <div>
-                <span className="text-slate-500 block">DOCKET REF:</span>
-                <strong className="font-bold">DGM&amp;M/DG-ENG/{new Date().getFullYear()}</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">GENERATED:</span>
-                <strong>{new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">CLASSIFICATION:</span>
-                <strong className="text-emerald-900 font-bold">OFFICIAL / EXECUTIVE</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">ISSUED BY:</span>
-                <strong>OFFICE OF THE DG</strong>
-              </div>
-            </div>
-
-            {/* 3. Summary Statistics Line */}
+            {/* 2. Simplified Summary Statistics Line */}
             <div className="flex items-center justify-between gap-2 p-2.5 bg-emerald-50/70 border border-emerald-300 text-xs font-serif text-emerald-950 mb-4 rounded-xs">
               <div>
                 Total Scheduled Engagements: <strong className="font-sans font-bold text-emerald-900">{stats.total}</strong>
@@ -346,17 +404,9 @@ export const EngagementsPrintModal: React.FC = () => {
               <div>
                 Chaired by DG: <strong className="font-sans font-bold text-emerald-900">{stats.dgChaired}</strong>
               </div>
-              <div>&bull;</div>
-              <div>
-                Rescheduled: <strong className="font-sans font-bold text-amber-800">{stats.rescheduled}</strong>
-              </div>
-              <div>&bull;</div>
-              <div>
-                Directives Linked: <strong className="font-sans font-bold text-slate-900">{stats.totalDirectives}</strong>
-              </div>
             </div>
 
-            {/* 4. Tabular Engagements List */}
+            {/* 3. Tabular Engagements List */}
             {filteredMeetings.length === 0 ? (
               <div className="p-12 text-center border-2 border-dashed border-slate-300 my-6">
                 <p className="text-sm font-semibold text-slate-600">
@@ -390,8 +440,8 @@ export const EngagementsPrintModal: React.FC = () => {
 
                         {/* Time & Venue */}
                         <td className="border border-slate-400 p-2 align-top text-[11px]">
-                          <div className="font-bold text-slate-950 font-mono flex items-center gap-1">
-                            <span>{m.time}</span>
+                          <div className="font-bold text-slate-950 font-mono">
+                            {m.time}
                           </div>
                           {scope !== 'today' && scope !== 'tomorrow' && (
                             <div className="text-[10px] text-slate-600 font-mono font-semibold">
@@ -438,9 +488,11 @@ export const EngagementsPrintModal: React.FC = () => {
                           <div className="font-bold text-slate-900 mb-0.5">
                             Chair: <span className="font-normal">{m.chairperson}</span>
                           </div>
-                          <div className="text-slate-600 text-[10px]">
-                            <strong>Participants:</strong> {m.participating_officers}
-                          </div>
+                          {m.participating_officers && (
+                            <div className="text-slate-600 text-[10px]">
+                              <strong>Participants:</strong> {m.participating_officers}
+                            </div>
+                          )}
                         </td>
 
                         {/* Status */}
@@ -465,7 +517,7 @@ export const EngagementsPrintModal: React.FC = () => {
               </table>
             )}
 
-            {/* 5. Official Verification & Sign-Off Block */}
+            {/* 4. Official Sign-Off Block */}
             <div className="mt-8 pt-4 border-t-2 border-slate-900 text-xs text-slate-800">
               <div className="flex flex-col sm:flex-row items-end justify-between gap-6 pt-2">
                 
@@ -479,9 +531,7 @@ export const EngagementsPrintModal: React.FC = () => {
 
                 {/* Sign-off Seal Block */}
                 <div className="text-right flex-shrink-0">
-                  <div className="h-12 flex items-end justify-end mb-1">
-                    <span className="text-[10px] text-slate-400 italic font-serif">Verified from Official Management Portal</span>
-                  </div>
+                  <div className="h-10"></div>
                   <div className="border-t border-slate-800 pt-1 font-serif">
                     <div className="font-bold text-slate-950 text-xs">Staff Officer to Director General</div>
                     <div className="text-[10px] text-slate-700">Directorate General of Mines &amp; Minerals</div>
