@@ -70,7 +70,7 @@ export const MeetingsView: React.FC = () => {
   const [newTime, setNewTime] = useState('11:00 AM');
   const [newVenue, setNewVenue] = useState('Committee Room No. 1, DG Office, Poonch House, Multan Road, Lahore');
   const [newChairperson, setNewChairperson] = useState('Director General, Mines & Minerals, Punjab');
-  const [newParticipants, setNewParticipants] = useState('Director LSM, Director SSM, Director Minor Minerals, Staff Officer to DG');
+  const [newParticipants, setNewParticipants] = useState('');
   const [newCategory, setNewCategory] = useState<Meeting['category']>('Administrative');
   const [newStatus, setNewStatus] = useState<Meeting['status']>('Scheduled');
   const [newRemarks, setNewRemarks] = useState('');
@@ -80,7 +80,7 @@ export const MeetingsView: React.FC = () => {
   const [dirDescription, setDirDescription] = useState('');
   const [dirDivisions, setDirDivisions] = useState<string[]>(['Administration']);
   const [dirFieldOffices, setDirFieldOffices] = useState<string[]>([]);
-  const [dirOfficer, setDirOfficer] = useState('Director / In-Charge Officer');
+  const [dirOfficer, setDirOfficer] = useState('');
   const [dirPriority, setDirPriority] = useState<'High' | 'Medium' | 'Normal'>('Normal');
   const [dirDeadline, setDirDeadline] = useState(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -759,6 +759,7 @@ export const MeetingsView: React.FC = () => {
                     <input
                       type="text"
                       required
+                      placeholder="e.g. Director LSM / Concerned Officer"
                       value={dirOfficer}
                       onChange={(e) => setDirOfficer(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-[#070d18] text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border border-slate-300 dark:border-[#1e3250]"
@@ -1081,6 +1082,7 @@ export const MeetingsView: React.FC = () => {
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Director LSM, Director SSM, Mining Officers"
                     value={newParticipants}
                     onChange={(e) => setNewParticipants(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-[#070d18] text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border border-slate-300 dark:border-[#1e3250]"

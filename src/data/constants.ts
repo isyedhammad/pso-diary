@@ -78,50 +78,16 @@ export const DOCUMENT_TYPES = [
 export const SAMPLE_USERS = [
   {
     id: 'USR-001',
-    name: 'Muhammad Babar (DG)',
+    name: 'Director General',
     email: 'dg@mines.punjab.gov.pk',
     role: 'Administrator' as const,
     designation: 'Director General, Mines & Minerals'
   },
   {
     id: 'USR-002',
-    name: 'Syed Hammad Raza',
+    name: 'Staff Officer to DG',
     email: 'monitoring.dg@mines.punjab.gov.pk',
     role: 'Monitoring / DG Office' as const,
-    designation: 'Staff Officer to DG / Assistant Director (Monitoring)'
-  },
-  {
-    id: 'USR-003',
-    name: 'Dr. Tariq Mehmood',
-    email: 'dir.lsm@mines.punjab.gov.pk',
-    role: 'Division / Field Office User' as const,
-    division: 'Large Scale Mining',
-    designation: 'Director (Large Scale Mining)'
-  },
-  {
-    id: 'USR-004',
-    name: 'Engr. Zulfiqar Ali',
-    email: 'dir.ssm@mines.punjab.gov.pk',
-    role: 'Division / Field Office User' as const,
-    division: 'Small Scale Mining',
-    designation: 'Director (Small Scale Mining)'
-  },
-  {
-    id: 'USR-005',
-    name: 'Malik Farooq Ahmed',
-    email: 'mo.chakwal@mines.punjab.gov.pk',
-    role: 'Division / Field Office User' as const,
-    division: 'Field Offices',
-    field_office: 'Chakwal',
-    designation: 'Mining Officer, Field Office Chakwal'
-  },
-  {
-    id: 'USR-006',
-    name: 'Rana Shahid Iqbal',
-    email: 'mo.dgkhan@mines.punjab.gov.pk',
-    role: 'Division / Field Office User' as const,
-    division: 'Field Offices',
-    field_office: 'D.G. Khan',
-    designation: 'Senior Mining Officer, Field Office D.G. Khan'
+    designation: 'Staff Officer to DG / Monitoring Officer'
   }
 ];

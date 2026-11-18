@@ -3,11 +3,11 @@ import { INITIAL_DEMO_MEETINGS, INITIAL_DEMO_DIRECTIONS, INITIAL_DEMO_ACTIVITY_L
 import { getSupabaseClient, getStoredCloudConfig } from './supabaseClient';
 
 const STORAGE_KEYS = {
-  MEETINGS: 'dgmm_compliance_meetings_v2',
-  DIRECTIONS: 'dgmm_compliance_directions_v2',
-  ACTIVITY_LOGS: 'dgmm_compliance_activities_v2',
-  DOCUMENTS: 'dgmm_compliance_documents_v2',
-  HAS_INITIALIZED: 'dgmm_compliance_initialized_v2',
+  MEETINGS: 'dgmm_compliance_meetings_v3',
+  DIRECTIONS: 'dgmm_compliance_directions_v3',
+  ACTIVITY_LOGS: 'dgmm_compliance_activities_v3',
+  DOCUMENTS: 'dgmm_compliance_documents_v3',
+  HAS_INITIALIZED: 'dgmm_compliance_initialized_v3',
 };
 
 /**
@@ -36,6 +36,24 @@ export class StorageService {
    * Initialize local store (empty by default)
    */
   static init(): { meetings: Meeting[]; directions: Direction[]; activityLogs: ActivityLog[] } {
+    // Purge any legacy demo caches from previous sessions
+    try {
+      [
+        'dgmm_compliance_meetings_v2', 
+        'dgmm_compliance_directions_v2', 
+        'dgmm_compliance_activities_v2', 
+        'dgmm_compliance_initialized_v2',
+        'dgmm_compliance_meetings', 
+        'dgmm_compliance_directions', 
+        'dgmm_compliance_activities', 
+        'dgmm_compliance_initialized'
+      ].forEach(k => {
+        localStorage.removeItem(k);
+      });
+    } catch {
+      // ignore
+    }
+
     const initialized = localStorage.getItem(STORAGE_KEYS.HAS_INITIALIZED);
     
     if (!initialized) {
@@ -50,9 +68,18 @@ export class StorageService {
       };
     }
 
-    const meetings = this.getMeetings();
-    const directions = this.getDirections();
-    const activityLogs = this.getActivityLogs();
+    let meetings = this.getMeetings();
+    let directions = this.getDirections();
+    let activityLogs = this.getActivityLogs();
+
+    // Cleanse any legacy demo entries or names
+    meetings = meetings.filter(m => !m.chairperson?.includes('Babar') && !m.title?.toLowerCase().includes('salt range'));
+    directions = directions.filter(d => !d.responsible_officer?.includes('Babar') && !d.title?.toLowerCase().includes('salt range'));
+    activityLogs = activityLogs.filter(a => !a.user_name?.includes('Babar'));
+
+    this.saveMeetings(meetings);
+    this.saveDirections(directions);
+    this.saveActivityLogs(activityLogs);
 
     return { meetings, directions, activityLogs };
   }
