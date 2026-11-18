@@ -4,8 +4,6 @@ import {
   LayoutDashboard, 
   Calendar, 
   Compass, 
-  FolderArchive, 
-  Settings,
   X
 } from 'lucide-react';
 
@@ -39,18 +37,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       badgeColor: kpis.overdueDirections > 0 
         ? 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800'
         : 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800'
-    },
-    {
-      id: 'documents',
-      label: 'Documents Repository',
-      icon: FolderArchive,
-      badge: null
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: Settings,
-      badge: null
     }
   ];
 

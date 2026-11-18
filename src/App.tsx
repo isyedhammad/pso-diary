@@ -5,8 +5,6 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { MeetingsView } from './components/MeetingsView';
 import { DirectionsView } from './components/DirectionsView';
-import { DocumentsView } from './components/DocumentsView';
-import { SettingsView } from './components/SettingsView';
 
 const MainLayout: React.FC = () => {
   const { activeTab } = useApp();
@@ -32,8 +30,6 @@ const MainLayout: React.FC = () => {
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'meetings' && <MeetingsView />}
           {activeTab === 'directions' && <DirectionsView />}
-          {activeTab === 'documents' && <DocumentsView />}
-          {activeTab === 'settings' && <SettingsView />}
 
           {/* Departmental Institutional Footer */}
           <footer className="mt-16 pt-6 border-t border-slate-200 dark:border-[#182842] text-center text-xs text-slate-500 font-serif pb-8 space-y-1">
@@ -46,7 +42,7 @@ const MainLayout: React.FC = () => {
               <span>Government of the Punjab</span>
             </div>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-sans">
-              Poonch House, Multan Road, Lahore, Pakistan &bull; Regulated under PMCR 2002 &amp; Punjab Minerals Act
+              Poonch House, Multan Road, Lahore, Pakistan
             </p>
           </footer>
         </main>
