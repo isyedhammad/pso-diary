@@ -99,9 +99,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, isSidebarOpen }
                 <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-800 dark:text-amber-400 font-serif">
                   GOVERNMENT OF THE PUNJAB
                 </span>
-                <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-1 py-0.2 rounded font-mono font-semibold">
-                  DGM&M
-                </span>
               </div>
               <h1 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
                 DG Mines & Minerals
