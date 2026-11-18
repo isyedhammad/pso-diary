@@ -5,11 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { MeetingsView } from './components/MeetingsView';
 import { DirectionsView } from './components/DirectionsView';
-import { ComplianceView } from './components/ComplianceView';
-import { DivisionsView } from './components/DivisionsView';
-import { FieldOfficesView } from './components/FieldOfficesView';
 import { DocumentsView } from './components/DocumentsView';
-import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 
 const MainLayout: React.FC = () => {
@@ -17,8 +13,8 @@ const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#070c16] text-slate-100 flex flex-col font-sans">
-      {/* Top Navigation Bar with Dual Crests & Global Search */}
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070c16] dark:text-slate-100 flex flex-col font-sans transition-colors duration-150">
+      {/* Top Navigation Bar with Dual Crests, Theme Toggle & Search */}
       <Navbar 
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
         isSidebarOpen={isSidebarOpen} 
@@ -36,24 +32,20 @@ const MainLayout: React.FC = () => {
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'meetings' && <MeetingsView />}
           {activeTab === 'directions' && <DirectionsView />}
-          {activeTab === 'compliance' && <ComplianceView />}
-          {activeTab === 'divisions' && <DivisionsView />}
-          {activeTab === 'field-offices' && <FieldOfficesView />}
           {activeTab === 'documents' && <DocumentsView />}
-          {activeTab === 'reports' && <ReportsView />}
           {activeTab === 'settings' && <SettingsView />}
 
           {/* Departmental Institutional Footer */}
-          <footer className="mt-16 pt-6 border-t border-[#182842] text-center text-xs text-slate-500 font-serif pb-8 space-y-1">
+          <footer className="mt-16 pt-6 border-t border-slate-200 dark:border-[#182842] text-center text-xs text-slate-500 font-serif pb-8 space-y-1">
             <div className="flex items-center justify-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="font-bold text-slate-400">Office of the Director General</span>
-              <span className="text-slate-600">&bull;</span>
-              <span>Mines & Minerals Department</span>
-              <span className="text-slate-600">&bull;</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              <span className="font-bold text-slate-700 dark:text-slate-400">Office of the Director General</span>
+              <span className="text-slate-400 dark:text-slate-600">&bull;</span>
+              <span>Mines &amp; Minerals Department</span>
+              <span className="text-slate-400 dark:text-slate-600">&bull;</span>
               <span>Government of the Punjab</span>
             </div>
-            <p className="text-[11px] text-slate-500 font-sans">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-sans">
               Poonch House, Multan Road, Lahore, Pakistan &bull; Regulated under PMCR 2002 &amp; Punjab Minerals Act
             </p>
           </footer>

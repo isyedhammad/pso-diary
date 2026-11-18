@@ -4,28 +4,34 @@
 
 @layer base {
   body {
-    @apply bg-[#080d16] text-slate-100 antialiased;
+    @apply bg-slate-50 text-slate-900 dark:bg-[#080d16] dark:text-slate-100 antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Custom Scrollbar for sleek executive feel */
+  /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #080d16;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1b2f4d;
+    background: #cbd5e1;
     border-radius: 3px;
   }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #1b2f4d;
+  }
   ::-webkit-scrollbar-thumb:hover {
+    background: #059669;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
     background: #c8a355;
   }
 }
 
-/* Executive Print Styles for Report Generation */
+/* Executive Print Styles */
 @media print {
   header, aside, button, input, select, .no-print {
     display: none !important;

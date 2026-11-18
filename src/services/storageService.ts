@@ -3,12 +3,11 @@ import { INITIAL_DEMO_MEETINGS, INITIAL_DEMO_DIRECTIONS, INITIAL_DEMO_ACTIVITY_L
 import { getSupabaseClient, getStoredCloudConfig } from './supabaseClient';
 
 const STORAGE_KEYS = {
-  MEETINGS: 'dgmm_compliance_meetings_v1',
-  DIRECTIONS: 'dgmm_compliance_directions_v1',
-  ACTIVITY_LOGS: 'dgmm_compliance_activities_v1',
-  DOCUMENTS: 'dgmm_compliance_documents_v1',
-  HAS_INITIALIZED: 'dgmm_compliance_initialized_v1',
-  IS_DEMO_ACTIVE: 'dgmm_compliance_demo_active_v1',
+  MEETINGS: 'dgmm_compliance_meetings_v2',
+  DIRECTIONS: 'dgmm_compliance_directions_v2',
+  ACTIVITY_LOGS: 'dgmm_compliance_activities_v2',
+  DOCUMENTS: 'dgmm_compliance_documents_v2',
+  HAS_INITIALIZED: 'dgmm_compliance_initialized_v2',
 };
 
 /**
@@ -34,31 +33,28 @@ export const calculateDirectionStatus = (direction: Direction): Direction['statu
  */
 export class StorageService {
   /**
-   * Initialize local store with initial demo data if first load
+   * Initialize local store (empty by default)
    */
-  static init(): { meetings: Meeting[]; directions: Direction[]; activityLogs: ActivityLog[]; isDemoActive: boolean } {
+  static init(): { meetings: Meeting[]; directions: Direction[]; activityLogs: ActivityLog[] } {
     const initialized = localStorage.getItem(STORAGE_KEYS.HAS_INITIALIZED);
     
     if (!initialized) {
-      this.saveMeetings(INITIAL_DEMO_MEETINGS);
-      this.saveDirections(INITIAL_DEMO_DIRECTIONS);
-      this.saveActivityLogs(INITIAL_DEMO_ACTIVITY_LOGS);
+      this.saveMeetings([]);
+      this.saveDirections([]);
+      this.saveActivityLogs([]);
       localStorage.setItem(STORAGE_KEYS.HAS_INITIALIZED, 'true');
-      localStorage.setItem(STORAGE_KEYS.IS_DEMO_ACTIVE, 'true');
       return {
-        meetings: INITIAL_DEMO_MEETINGS,
-        directions: INITIAL_DEMO_DIRECTIONS,
-        activityLogs: INITIAL_DEMO_ACTIVITY_LOGS,
-        isDemoActive: true
+        meetings: [],
+        directions: [],
+        activityLogs: []
       };
     }
 
     const meetings = this.getMeetings();
     const directions = this.getDirections();
     const activityLogs = this.getActivityLogs();
-    const isDemoActive = localStorage.getItem(STORAGE_KEYS.IS_DEMO_ACTIVE) !== 'false';
 
-    return { meetings, directions, activityLogs, isDemoActive };
+    return { meetings, directions, activityLogs };
   }
 
   // --- MEETINGS ---
@@ -216,7 +212,7 @@ export class StorageService {
     }
   }
 
-  // --- FILE UPLOAD TO CLOUD / BASE64 ---
+  // --- FILE UPLOADS ---
 
   static async uploadDocument(
     file: File,
@@ -259,7 +255,6 @@ export class StorageService {
       }
     }
 
-    // Always create Base64 data URL for offline preview/download if needed
     if (!cloudUrl && file.size < 5 * 1024 * 1024) {
       base64Content = await new Promise((resolve) => {
         const reader = new FileReader();
@@ -292,7 +287,7 @@ export class StorageService {
 
   static exportDatabaseToJson(): string {
     const bundle = {
-      version: '1.0.0',
+      version: '2.0.0',
       export_date: new Date().toISOString(),
       portal: 'Directorate General of Mines & Minerals, Government of the Punjab',
       system: 'Directions, Meetings & Compliance Management Portal',
@@ -312,7 +307,6 @@ export class StorageService {
         if (Array.isArray(parsed.activity_logs)) {
           this.saveActivityLogs(parsed.activity_logs);
         }
-        localStorage.setItem(STORAGE_KEYS.IS_DEMO_ACTIVE, 'false');
         return true;
       }
       return false;
@@ -326,13 +320,5 @@ export class StorageService {
     this.saveMeetings([]);
     this.saveDirections([]);
     this.saveActivityLogs([]);
-    localStorage.setItem(STORAGE_KEYS.IS_DEMO_ACTIVE, 'false');
-  }
-
-  static restoreDemoData(): void {
-    this.saveMeetings(INITIAL_DEMO_MEETINGS);
-    this.saveDirections(INITIAL_DEMO_DIRECTIONS);
-    this.saveActivityLogs(INITIAL_DEMO_ACTIVITY_LOGS);
-    localStorage.setItem(STORAGE_KEYS.IS_DEMO_ACTIVE, 'true');
   }
 }

@@ -15,6 +15,10 @@ import { StorageService, calculateDirectionStatus } from '../services/storageSer
 import { getStoredCloudConfig, saveStoredCloudConfig, initSupabaseClient } from '../services/supabaseClient';
 
 interface AppContextType {
+  // Theme state
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+
   // Navigation & View state
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -37,7 +41,6 @@ interface AppContextType {
   activityLogs: ActivityLog[];
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
-  isDemoActive: boolean;
   cloudConfig: CloudConfig;
 
   // KPIs & Dynamic Statistics
@@ -85,7 +88,6 @@ interface AppContextType {
   addDocumentToMeeting: (meetingId: string, doc: DocumentItem) => Promise<void>;
   addDocumentToDirection: (directionId: string, doc: DocumentItem) => Promise<void>;
   updateCloudSettings: (config: CloudConfig) => void;
-  resetToDemoData: () => void;
   clearDatabase: () => void;
   exportDatabase: () => string;
   importDatabase: (json: string) => boolean;
@@ -94,6 +96,32 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Theme state: dark / light
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('dgmm_theme') as 'dark' | 'light' | null;
+    return saved || 'dark';
+  });
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('dgmm_theme', nextTheme);
+    if (nextTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  // Navigation
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [selectedDirectionId, setSelectedDirectionId] = useState<string | null>(null);
@@ -107,15 +135,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [directions, setDirections] = useState<Direction[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [isDemoActive, setIsDemoActive] = useState<boolean>(true);
 
-  // Initialize data on mount
+  // Initialize clean data on mount
   useEffect(() => {
     const initial = StorageService.init();
     setMeetings(initial.meetings);
     setDirections(initial.directions);
     setActivityLogs(initial.activityLogs);
-    setIsDemoActive(initial.isDemoActive);
     initSupabaseClient(cloudConfig);
   }, []);
 
@@ -156,15 +182,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.syncActivityLogToCloud(newLog);
   };
 
-  // --- DYNAMIC METRICS CALCULATIONS ---
+  // Dynamic KPI Metrics
   const kpis = useMemo(() => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    
-    // 48 hours date
     const in48Hours = new Date(today.getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
-    // End of current week (Sunday)
     const dayOfWeek = today.getDay();
     const daysUntilSunday = (7 - dayOfWeek) % 7;
     const endOfWeek = new Date(today.getTime() + daysUntilSunday * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -202,7 +224,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // Check upcoming deadlines for non-completed
       if (!isCompleted && d.deadline) {
         if (d.deadline >= todayStr && d.deadline <= in48Hours) {
           dueIn48HoursDirections++;
@@ -233,7 +254,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [meetings, directions]);
 
-  // Division-wise performance calculations
+  // Division performance
   const divisionPerformances = useMemo<DivisionPerformance[]>(() => {
     const todayStr = new Date().toISOString().split('T')[0];
 
@@ -266,7 +287,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
 
-      // Compliance submission rate: (Completed + Under Review + Compliance Submitted) / total
       const rate = total > 0 
         ? Math.round(((completed + compliance_submitted + under_review) / total) * 100) 
         : 100;
@@ -285,7 +305,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, [directions]);
 
-  // Field Offices performance calculations
+  // Field Office performance
   const fieldOfficePerformances = useMemo<FieldOfficePerformance[]>(() => {
     const todayStr = new Date().toISOString().split('T')[0];
 
@@ -324,8 +344,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, [directions]);
 
-  // --- ACTIONS ---
-
+  // Actions
   const createMeeting = async (data: Partial<Meeting>): Promise<Meeting> => {
     const currentYear = new Date().getFullYear();
     const nextSeq = meetings.length + 1;
@@ -375,20 +394,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.saveMeetings(updated);
     await StorageService.syncMeetingToCloud(meeting);
 
-    addActivityLog(
-      'meeting',
-      meeting.id,
-      meeting.title,
-      'Meeting Updated',
-      `Meeting details updated`
-    );
+    addActivityLog('meeting', meeting.id, meeting.title, 'Meeting Updated', 'Meeting details updated');
   };
 
   const createDirection = async (data: Partial<Direction>): Promise<Direction> => {
     const currentYear = new Date().getFullYear();
     const nextSeq = directions.length + 1;
     const formattedId = `DIR-${currentYear}-${String(nextSeq).padStart(3, '0')}`;
-
     const relatedMeeting = meetings.find(m => m.id === data.meeting_id);
 
     const newDirection: Direction = {
@@ -414,7 +426,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updated_at: new Date().toISOString()
     };
 
-    // Calculate dynamic status
     newDirection.status = calculateDirectionStatus(newDirection);
 
     const updatedDirections = [newDirection, ...directions];
@@ -427,7 +438,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newDirection.id,
       newDirection.title,
       'Direction Issued',
-      `Direction issued from meeting ${newDirection.meeting_id} with deadline ${newDirection.deadline}`
+      `Direction issued with deadline ${newDirection.deadline}`
     );
 
     return newDirection;
@@ -444,13 +455,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.saveDirections(updated);
     await StorageService.syncDirectionToCloud(recalculated);
 
-    addActivityLog(
-      'direction',
-      direction.id,
-      direction.title,
-      'Direction Updated',
-      `Direction record modified`
-    );
+    addActivityLog('direction', direction.id, direction.title, 'Direction Updated', 'Direction record modified');
   };
 
   const reviseDeadline = async (directionId: string, newDeadline: string, reason: string): Promise<void> => {
@@ -518,8 +523,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_at: new Date().toISOString()
     };
 
-    // A direction must NOT automatically become Completed merely because a report has been uploaded!
-    // It transitions to 'Compliance Submitted' awaiting review.
     const updatedDirection: Direction = {
       ...target,
       status: 'Compliance Submitted',
@@ -532,7 +535,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.saveDirections(updated);
     await StorageService.syncDirectionToCloud(updatedDirection);
 
-    // Also link compliance report to the originating meeting's compliance documents
     if (target.meeting_id && submission.files.length > 0) {
       const meeting = meetings.find(m => m.id === target.meeting_id);
       if (meeting) {
@@ -588,7 +590,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } else if (action === 'Returned') {
       logAction = 'Compliance Returned';
-      newStatus = 'In Progress'; // Returned for further action
+      newStatus = 'In Progress';
     } else if (action === 'Under Review') {
       logAction = 'Compliance Under Review';
       newStatus = 'Under Review';
@@ -606,22 +608,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.saveDirections(updated);
     await StorageService.syncDirectionToCloud(updatedDirection);
 
-    addActivityLog(
-      'compliance',
-      submissionId,
-      `Review of ${target.id}`,
-      logAction,
-      `Reviewed by ${currentUser.name}: ${remarks}`
-    );
+    addActivityLog('compliance', submissionId, `Review of ${target.id}`, logAction, `Reviewed by ${currentUser.name}: ${remarks}`);
 
     if (newStatus === 'Completed') {
-      addActivityLog(
-        'direction',
-        directionId,
-        target.title,
-        'Direction Marked Completed',
-        `Formally accepted and closed by ${currentUser.name}`
-      );
+      addActivityLog('direction', directionId, target.title, 'Direction Marked Completed', `Formally accepted and closed by ${currentUser.name}`);
     }
   };
 
@@ -647,13 +637,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.saveDirections(updated);
     await StorageService.syncDirectionToCloud(updatedDirection);
 
-    addActivityLog(
-      'direction',
-      directionId,
-      target.title,
-      'Reminder Logged',
-      `Reminder issued to ${recipient}: ${notes}`
-    );
+    addActivityLog('direction', directionId, target.title, 'Reminder Logged', `Reminder to ${recipient}: ${notes}`);
   };
 
   const addDocumentToMeeting = async (meetingId: string, doc: DocumentItem): Promise<void> => {
@@ -676,13 +660,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.saveMeetings(updated);
     await StorageService.syncMeetingToCloud(copy);
 
-    addActivityLog(
-      'document',
-      doc.id,
-      doc.name,
-      'Document Uploaded',
-      `Uploaded to Meeting ${meetingId} under ${doc.file_type}`
-    );
+    addActivityLog('document', doc.id, doc.name, 'Document Uploaded', `Uploaded to Meeting ${meetingId} (${doc.file_type})`);
   };
 
   const addDocumentToDirection = async (directionId: string, doc: DocumentItem): Promise<void> => {
@@ -700,22 +678,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     StorageService.saveDirections(updated);
     await StorageService.syncDirectionToCloud(updatedDirection);
 
-    addActivityLog(
-      'document',
-      doc.id,
-      doc.name,
-      'Document Uploaded',
-      `Attachment added to Direction ${directionId}`
-    );
-  };
-
-  const resetToDemoData = () => {
-    StorageService.restoreDemoData();
-    const refreshed = StorageService.init();
-    setMeetings(refreshed.meetings);
-    setDirections(refreshed.directions);
-    setActivityLogs(refreshed.activityLogs);
-    setIsDemoActive(true);
+    addActivityLog('document', doc.id, doc.name, 'Document Uploaded', `Attachment added to Direction ${directionId}`);
   };
 
   const clearDatabase = () => {
@@ -723,7 +686,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMeetings([]);
     setDirections([]);
     setActivityLogs([]);
-    setIsDemoActive(false);
   };
 
   const exportDatabase = (): string => {
@@ -736,7 +698,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMeetings(StorageService.getMeetings());
       setDirections(StorageService.getDirections());
       setActivityLogs(StorageService.getActivityLogs());
-      setIsDemoActive(false);
     }
     return success;
   };
@@ -744,6 +705,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
+        theme,
+        toggleTheme,
         activeTab,
         setActiveTab,
         selectedMeetingId,
@@ -761,7 +724,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activityLogs,
         currentUser,
         setCurrentUser,
-        isDemoActive,
         cloudConfig,
         kpis,
         divisionPerformances,
@@ -777,7 +739,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addDocumentToMeeting,
         addDocumentToDirection,
         updateCloudSettings,
-        resetToDemoData,
         clearDatabase,
         exportDatabase,
         importDatabase
