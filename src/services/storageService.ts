@@ -104,6 +104,18 @@ export class StorageService {
     }
   }
 
+  static async deleteMeetingFromCloud(meetingId: string): Promise<boolean> {
+    const client = getSupabaseClient();
+    if (!client) return false;
+    try {
+      const { error } = await client.from('meetings').delete().eq('id', meetingId);
+      return !error;
+    } catch (err) {
+      console.warn('Could not delete meeting from Supabase cloud:', err);
+      return false;
+    }
+  }
+
   // --- DIRECTIONS ---
 
   static getDirections(): Direction[] {

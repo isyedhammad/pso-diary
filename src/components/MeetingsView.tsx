@@ -16,7 +16,10 @@ import {
   Download, 
   ArrowLeft, 
   Compass, 
-  ChevronRight
+  ChevronRight,
+  CalendarClock,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 
 export const MeetingsView: React.FC = () => {
@@ -24,6 +27,9 @@ export const MeetingsView: React.FC = () => {
     meetings, 
     directions, 
     createMeeting, 
+    updateMeeting,
+    deleteMeeting,
+    rescheduleMeeting,
     createDirection,
     addDocumentToMeeting,
     selectedMeetingId, 
@@ -42,6 +48,18 @@ export const MeetingsView: React.FC = () => {
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
   const [isAddDirectionModalOpen, setIsAddDirectionModalOpen] = useState(false);
   const [activeMeetingTab, setActiveMeetingTab] = useState<'overview' | 'agenda' | 'directions' | 'supporting' | 'minutes' | 'compliance' | 'activity'>('overview');
+
+  // Reschedule state
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [meetingToReschedule, setMeetingToReschedule] = useState<Meeting | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduleVenue, setRescheduleVenue] = useState('');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+
+  // Delete state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [meetingToDelete, setMeetingToDelete] = useState<Meeting | null>(null);
 
   // New Meeting Form state
   const [newTitle, setNewTitle] = useState('');
@@ -115,6 +133,41 @@ export const MeetingsView: React.FC = () => {
     setNewTitle('');
     setNewSubject('');
     setNewRemarks('');
+  };
+
+  const openRescheduleModal = (m: Meeting) => {
+    setMeetingToReschedule(m);
+    setRescheduleDate(m.date);
+    setRescheduleTime(m.time);
+    setRescheduleVenue(m.venue);
+    setRescheduleReason('');
+    setIsRescheduleModalOpen(true);
+  };
+
+  const handleConfirmReschedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!meetingToReschedule || !rescheduleDate || !rescheduleReason.trim()) return;
+    await rescheduleMeeting(
+      meetingToReschedule.id,
+      rescheduleDate,
+      rescheduleTime || '11:00 AM',
+      rescheduleReason.trim(),
+      rescheduleVenue.trim() || undefined
+    );
+    setIsRescheduleModalOpen(false);
+    setMeetingToReschedule(null);
+  };
+
+  const openDeleteModal = (m: Meeting) => {
+    setMeetingToDelete(m);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!meetingToDelete) return;
+    await deleteMeeting(meetingToDelete.id);
+    setIsDeleteModalOpen(false);
+    setMeetingToDelete(null);
   };
 
   const handleAddDirectionFromMeeting = async (e: React.FormEvent) => {
@@ -263,7 +316,25 @@ export const MeetingsView: React.FC = () => {
             <span>Back to All Meetings</span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => openRescheduleModal(currentMeeting)}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#162744] dark:hover:bg-[#1e345c] text-slate-700 dark:text-amber-300 border border-slate-300 dark:border-[#223d68] text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+              title="Reschedule this meeting"
+            >
+              <CalendarClock className="w-4 h-4 text-amber-500" />
+              <span>Reschedule Meeting</span>
+            </button>
+
+            <button
+              onClick={() => openDeleteModal(currentMeeting)}
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+              title="Delete this meeting record"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span>Delete</span>
+            </button>
+
             <button
               onClick={() => setIsAddDirectionModalOpen(true)}
               className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 dark:bg-amber-600 dark:hover:bg-amber-500 text-white dark:text-slate-950 text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5"
@@ -285,7 +356,11 @@ export const MeetingsView: React.FC = () => {
                 <span className="text-xs px-2 py-0.5 rounded font-semibold bg-slate-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-slate-300 dark:border-emerald-800">
                   {currentMeeting.category}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded font-semibold bg-slate-100 dark:bg-[#172742] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
+                <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
+                  currentMeeting.status === 'Rescheduled'
+                    ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-600/40'
+                    : 'bg-slate-100 dark:bg-[#172742] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+                }`}>
                   {currentMeeting.status}
                 </span>
               </div>
@@ -379,6 +454,29 @@ export const MeetingsView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Reschedule History (if any) */}
+                {currentMeeting.reschedule_history && currentMeeting.reschedule_history.length > 0 && (
+                  <div className="p-3.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-xs space-y-2">
+                    <div className="text-amber-800 dark:text-amber-300 font-semibold uppercase text-[10px] tracking-wider flex items-center gap-1.5 font-mono">
+                      <CalendarClock className="w-3.5 h-3.5" />
+                      <span>Reschedule History ({currentMeeting.reschedule_history.length})</span>
+                    </div>
+                    <div className="space-y-2">
+                      {currentMeeting.reschedule_history.map((rh, idx) => (
+                        <div key={idx} className="bg-white/80 dark:bg-[#0c1626] p-2.5 rounded border border-amber-200 dark:border-[#22395d]">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                            <span>Rescheduled to: <strong className="text-amber-700 dark:text-amber-400">{rh.new_date} ({rh.new_time || '11:00 AM'})</strong></span>
+                            <span className="text-[10px] text-slate-400 font-mono">from {rh.previous_date} ({rh.previous_time || '11:00 AM'})</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
+                            <strong>Reason:</strong> {rh.reason}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {currentMeeting.general_remarks && (
                   <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#091220] border border-slate-200 dark:border-[#1c2e4b] text-xs">
@@ -790,7 +888,11 @@ export const MeetingsView: React.FC = () => {
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
                         {m.category}
                       </span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                        m.status === 'Rescheduled'
+                          ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-600/40'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      }`}>
                         {m.status}
                       </span>
                     </div>
@@ -809,12 +911,31 @@ export const MeetingsView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between md:justify-end gap-5 text-xs font-mono border-t md:border-t-0 pt-2 md:pt-0 border-slate-200 dark:border-[#1a2c47]">
+                  <div className="flex items-center justify-between md:justify-end gap-4 text-xs font-mono border-t md:border-t-0 pt-2 md:pt-0 border-slate-200 dark:border-[#1a2c47]">
                     <div className="text-right">
                       <div className="text-slate-800 dark:text-slate-200 font-bold">{relDirections.length} directions</div>
                       <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{completedCount} completed</div>
                       <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">{pendingCount} pending</div>
                     </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => openRescheduleModal(m)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[#1a2c47] transition-colors"
+                        title="Reschedule Meeting"
+                      >
+                        <CalendarClock className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(m)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title="Delete Meeting"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-amber-400 transition-all" />
                   </div>
                 </div>
@@ -961,6 +1082,171 @@ export const MeetingsView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Reschedule Meeting */}
+      {isRescheduleModalOpen && meetingToReschedule && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#0c1626] border border-slate-200 dark:border-[#22395d] rounded-xl max-w-lg w-full p-5 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#1b2d49]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                  <CalendarClock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 font-serif">
+                    Reschedule Meeting
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                    {meetingToReschedule.id} &bull; {meetingToReschedule.title}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsRescheduleModalOpen(false);
+                  setMeetingToReschedule(null);
+                }} 
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmReschedule} className="space-y-3.5 text-xs">
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#08101d] border border-slate-200 dark:border-[#192b45] text-slate-600 dark:text-slate-300">
+                <span className="text-[10px] font-semibold text-slate-500 block uppercase font-mono mb-1">Current Schedule</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{meetingToReschedule.date} at {meetingToReschedule.time}</span>
+                <div className="text-[11px] text-slate-500 mt-0.5">{meetingToReschedule.venue}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                    New Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-[#070d18] text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border border-slate-300 dark:border-[#1e3250] focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                    New Time *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 11:30 AM"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-[#070d18] text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border border-slate-300 dark:border-[#1e3250] focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  Venue (optional update)
+                </label>
+                <input
+                  type="text"
+                  value={rescheduleVenue}
+                  onChange={(e) => setRescheduleVenue(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#070d18] text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border border-slate-300 dark:border-[#1e3250] focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  Reason for Rescheduling *
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Official reason for rescheduling (e.g., DG attending Provincial Cabinet meeting; shifted on request of Division Heads)..."
+                  value={rescheduleReason}
+                  onChange={(e) => setRescheduleReason(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#070d18] text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border border-slate-300 dark:border-[#1e3250] focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-[#1b2d49]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRescheduleModalOpen(false);
+                    setMeetingToReschedule(null);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-[#22395d] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#14233c] font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold transition-all shadow-sm"
+                >
+                  Confirm Reschedule
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Delete Meeting Confirmation */}
+      {isDeleteModalOpen && meetingToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#0c1626] border border-slate-200 dark:border-[#22395d] rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex-shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 font-serif">
+                  Delete Meeting Record?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Are you sure you want to delete this meeting?
+                </p>
+                <div className="mt-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-[#08101d] border border-slate-200 dark:border-[#192b45] text-xs">
+                  <div className="font-mono font-bold text-emerald-800 dark:text-amber-400">{meetingToDelete.id}</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{meetingToDelete.title}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">{meetingToDelete.date} ({meetingToDelete.time})</div>
+                </div>
+                {directions.filter(d => d.meeting_id === meetingToDelete.id && !d.is_archived).length > 0 && (
+                  <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-2 font-medium">
+                    ⚠️ Notice: {directions.filter(d => d.meeting_id === meetingToDelete.id && !d.is_archived).length} direction(s) are linked to this meeting.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-[#1b2d49]">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setMeetingToDelete(null);
+                }}
+                className="px-4 py-2 rounded-lg border border-slate-300 dark:border-[#22395d] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#14233c] text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Meeting</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

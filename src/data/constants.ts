@@ -45,7 +45,8 @@ export const MEETING_STATUSES = [
   'In Progress',
   'Concluded',
   'Adjourned',
-  'Follow-up Required'
+  'Follow-up Required',
+  'Rescheduled'
 ] as const;
 
 export const PRIORITY_LEVELS = [

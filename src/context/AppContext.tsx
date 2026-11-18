@@ -65,6 +65,14 @@ interface AppContextType {
   // CRUD & Actions
   createMeeting: (data: Partial<Meeting>) => Promise<Meeting>;
   updateMeeting: (meeting: Meeting) => Promise<void>;
+  deleteMeeting: (meetingId: string) => Promise<void>;
+  rescheduleMeeting: (
+    meetingId: string, 
+    newDate: string, 
+    newTime: string, 
+    reason: string, 
+    newVenue?: string
+  ) => Promise<void>;
   createDirection: (data: Partial<Direction>) => Promise<Direction>;
   updateDirection: (direction: Direction) => Promise<void>;
   reviseDeadline: (directionId: string, newDeadline: string, reason: string) => Promise<void>;
@@ -395,6 +403,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await StorageService.syncMeetingToCloud(meeting);
 
     addActivityLog('meeting', meeting.id, meeting.title, 'Meeting Updated', 'Meeting details updated');
+  };
+
+  const deleteMeeting = async (meetingId: string): Promise<void> => {
+    const meetingToDelete = meetings.find(m => m.id === meetingId);
+    const updatedMeetings = meetings.filter(m => m.id !== meetingId);
+    setMeetings(updatedMeetings);
+    StorageService.saveMeetings(updatedMeetings);
+    await StorageService.deleteMeetingFromCloud(meetingId);
+
+    if (selectedMeetingId === meetingId) {
+      setSelectedMeetingId(null);
+    }
+
+    if (meetingToDelete) {
+      addActivityLog(
+        'meeting',
+        meetingToDelete.id,
+        meetingToDelete.title,
+        'Meeting Deleted',
+        `Meeting ${meetingToDelete.id} (${meetingToDelete.title}) deleted`
+      );
+    }
+  };
+
+  const rescheduleMeeting = async (
+    meetingId: string, 
+    newDate: string, 
+    newTime: string, 
+    reason: string, 
+    newVenue?: string
+  ): Promise<void> => {
+    const target = meetings.find(m => m.id === meetingId);
+    if (!target) return;
+
+    const oldDate = target.date;
+    const oldTime = target.time;
+
+    const rescheduleRecord = {
+      previous_date: oldDate,
+      previous_time: oldTime,
+      new_date: newDate,
+      new_time: newTime,
+      reason,
+      rescheduled_at: new Date().toISOString()
+    };
+
+    const history = target.reschedule_history || [];
+
+    const updatedMeeting: Meeting = {
+      ...target,
+      date: newDate,
+      time: newTime,
+      venue: newVenue || target.venue,
+      status: 'Rescheduled',
+      reschedule_history: [...history, rescheduleRecord],
+      updated_at: new Date().toISOString()
+    };
+
+    const updatedMeetings = meetings.map(m => m.id === meetingId ? updatedMeeting : m);
+    setMeetings(updatedMeetings);
+    StorageService.saveMeetings(updatedMeetings);
+    await StorageService.syncMeetingToCloud(updatedMeeting);
+
+    addActivityLog(
+      'meeting',
+      target.id,
+      target.title,
+      'Meeting Rescheduled',
+      `Meeting rescheduled from ${oldDate} (${oldTime}) to ${newDate} (${newTime}). Reason: ${reason}`
+    );
   };
 
   const createDirection = async (data: Partial<Direction>): Promise<Direction> => {
@@ -730,6 +808,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fieldOfficePerformances,
         createMeeting,
         updateMeeting,
+        deleteMeeting,
+        rescheduleMeeting,
         createDirection,
         updateDirection,
         reviseDeadline,

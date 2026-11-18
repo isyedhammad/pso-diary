@@ -24,7 +24,8 @@ export type MeetingStatus =
   | 'In Progress' 
   | 'Concluded' 
   | 'Adjourned' 
-  | 'Follow-up Required';
+  | 'Follow-up Required'
+  | 'Rescheduled';
 
 export type DocumentType = 
   | 'Agenda'
@@ -138,6 +139,14 @@ export interface Meeting {
   directions_count?: number;
   completed_directions_count?: number;
   pending_directions_count?: number;
+  reschedule_history?: {
+    previous_date: string;
+    previous_time?: string;
+    new_date: string;
+    new_time?: string;
+    reason: string;
+    rescheduled_at: string;
+  }[];
   is_archived?: boolean;
   created_at: string;
   updated_at: string;
@@ -151,6 +160,8 @@ export interface ActivityLog {
   action: 
     | 'Meeting Created'
     | 'Meeting Updated'
+    | 'Meeting Rescheduled'
+    | 'Meeting Deleted'
     | 'Brief Uploaded'
     | 'Agenda Uploaded'
     | 'Minutes Uploaded'
